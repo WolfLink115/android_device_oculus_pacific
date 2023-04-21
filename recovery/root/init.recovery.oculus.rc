@@ -1,0 +1,11 @@
+on fs
+    mount pstore pstore /sys/fs/pstore
+
+on boot
+    # Configure the LED as purple (max LED brightness is set as 70, not 255)
+    write /sys/class/leds/red/brightness 18
+    write /sys/class/leds/green/brightness 0
+    write /sys/class/leds/blue/brightness 70
+    # Configure the LED as blinking.
+    write /sys/class/leds/red/blink 1
+    write /sys/class/leds/blue/blink 1

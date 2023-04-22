@@ -14,16 +14,17 @@
 # limitations under the License.
 #
 
-# This contains the module build definitions for the hardware-specific
-# components for this device.
-#
-# As much as possible, those components should be built unconditionally,
-# with device-specific names to avoid collisions, to avoid device-specific
-# bitrot and build breakages. Building a component unconditionally does
-# *not* include it on all devices, so it is safe even with hardware-specific
-# components.
-
+ifeq ($(TARGET_RECOVERY_UI_LIB),librecovery_ui_nanohub)
 LOCAL_PATH := $(call my-dir)
-ifneq ($(filter pacific, $(TARGET_DEVICE)),)
-include $(call all-makefiles-under,$(LOCAL_PATH))
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := librecovery_ui_nanohub
+
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_C_INCLUDES += bootable/recovery
+
+LOCAL_SRC_FILES := nanohub_recovery_ui.cpp
+
+include $(BUILD_STATIC_LIBRARY)
 endif

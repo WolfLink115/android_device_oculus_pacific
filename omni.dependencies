@@ -1,0 +1,16 @@
+[
+  {
+    "remote":       "wl115",
+    "repository":   "kernel_device_oculus_pacific",
+    "target_path":  "kernel/oculus/pacific",
+    "revision":     "master"
+  },
+
+  {
+    "remote":       "wl115",
+    "repository":   "vendor_device_oculus_pacific",
+    "target_path":  "vendor/oculus/pacific",
+    "revision":     "master"
+  }
+]
+

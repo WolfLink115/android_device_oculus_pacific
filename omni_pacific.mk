@@ -10,13 +10,11 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 
 # Inherit some common Lineage stuff.
-$(call inherit-product, vendor/cm/config/common.mk)
+$(call inherit-product, vendor/omni/config/common.mk)
 
 # Inherit from pacific device
 $(call inherit-product, device/oculus/pacific/device.mk)
 $(call inherit-product-if-exists, vendor/oculus/pacific/pacific-vendor.mk)
-
-DEVICE_PACKAGE_OVERLAYS += device/oculus/pacific/overlay
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
 
@@ -26,8 +24,6 @@ PRODUCT_NAME := omni_pacific
 PRODUCT_BRAND := oculus
 PRODUCT_MODEL := Pacific
 PRODUCT_MANUFACTURER := oculus
-
-PRODUCT_GMS_CLIENTID_BASE := android-oculus
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
     PRIVATE_BUILD_DESC="vr_pacific-user 7.1.1 NGI77B 20480400000200000 release-keys"

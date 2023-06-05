@@ -7,3 +7,8 @@
 
 PRODUCT_MAKEFILES := \
     $(LOCAL_DIR)/omni_pacific.mk
+
+COMMON_LUNCH_CHOICES := \
+    omni_pacific-user \
+    omni_pacific-userdebug \
+    omni_pacific-eng

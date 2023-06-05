@@ -1,12 +1,21 @@
-/boot		    emmc		/dev/block/bootdevice/by-name/boot			flags=slotselect
-/   		    ext4		/dev/block/bootdevice/by-name/system		flags=slotselect
-/system_image	emmc		/dev/block/bootdevice/by-name/system		flags=slotselect
-/vendor		    ext4		/dev/block/bootdevice/by-name/vendor		flags=slotselect;display="Vendor";backup=1
-/vendor_image	emmc		/dev/block/bootdevice/by-name/vendor		flags=slotselect
-/data		    ext4		/dev/block/bootdevice/by-name/userdata		flags=fileencryption=ice:aes-256-cts
-/misc		    emmc		/dev/block/bootdevice/by-name/misc
-/persist    	ext4		/dev/block/bootdevice/by-name/persist
-/efs1	    	emmc		/dev/block/bootdevice/by-name/modemst1		flags=backup=1;display=EFS
-/efs2	    	emmc		/dev/block/bootdevice/by-name/modemst2		flags=backup=1;subpartitionof=/efs1
+# Android fstab file.
+# The filesystem that contains the filesystem checker binary (typically /system) cannot
+# specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
 
-/usb-otg        vfat        /dev/block/sdg*                             flags=removable;storage;display=USB-OTG
+# mount point    fstype     device                 device2                      	  flags
+
+/boot            emmc              /dev/block/bootdevice/by-name/boot       	flags=slotselect;backup=1
+/system_image    emmc              /dev/block/bootdevice/by-name/system     	flags=slotselect;display="System_Image";backup=1;flashimg=1
+
+/system          ext4              /dev/block/bootdevice/by-name/system     	flags=slotselect;backup=1
+/data            ext4              /dev/block/bootdevice/by-name/userdata   	flags=encryptable=footer;backup=1
+
+/storage         ext4    	   /data/media/0                  		flags=display="Internal Storage";usermrf;backup=1;fsflags="bind";removable
+/persist         ext4              /dev/block/bootdevice/by-name/persist    	flags=display="Persist"
+/persist_image   emmc              /dev/block/bootdevice/by-name/persist     	flags=display="Persist_Image";backup=1;flashimg=1
+/splash          emmc              /dev/block/bootdevice/by-name/splash    	flags=display="Splash Image";backup=1;flashimg=1
+/misc            emmc              /dev/block/bootdevice/by-name/misc
+/modem		 emmc              /dev/block/bootdevice/by-name/modem      	flags=slotselect;display="Modem";backup=1;flashimg=1
+/firmware        vfat              /dev/block/bootdevice/by-name/modem      	flags=display="Firmware";slotselect;backup=1;mounttodecrypt;fsflags=context=u:object_r:firmware_file:s0
+/efs1            emmc              /dev/block/bootdevice/by-name/modemst1   	flags=backup=1;display=EFS;flashimg=1
+/efs2            emmc              /dev/block/bootdevice/by-name/modemst2   	flags=backup=1;subpartitionof=/efs1;flashimg=1

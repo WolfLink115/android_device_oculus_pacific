@@ -30,10 +30,6 @@ PRODUCT_MANUFACTURER := oculus
 TARGET_SCREEN_HEIGHT := 1440
 TARGET_SCREEN_WIDTH := 2560
 
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.hardware.keystore=msm8996 \
-    ro.hardware.bootctrl=msm8996
-
 PRODUCT_BUILD_PROP_OVERRIDES += \
     PRIVATE_BUILD_DESC="vr_pacific-user 7.1.1 NGI77B 20480400000200000 release-keys"
 

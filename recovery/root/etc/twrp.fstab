@@ -9,7 +9,7 @@
 # mount		fstype	device					flags
 /boot		emmc	/dev/block/bootdevice/by-name/boot	flags=slotselect;backup=1
 /system_root	ext4	/dev/block/bootdevice/by-name/system	flags=slotselect;display="System";backup=1;flashimg=1
-/data		ext4	/dev/block/bootdevice/by-name/userdata	flags=encryptable=footer;backup=1
+/data		ext4	/dev/block/bootdevice/by-name/userdata	flags=fileencryption=aes-256-xts:aes-256-cts;backup=1
 /persist	ext4	/dev/block/bootdevice/by-name/persist	flags=display="Persist"
 /splash		emmc	/dev/block/bootdevice/by-name/splash	flags=display="Splash Image";backup=1;flashimg=1
 /misc		emmc	/dev/block/bootdevice/by-name/misc

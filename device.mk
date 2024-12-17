@@ -34,3 +34,10 @@ AB_OTA_POSTINSTALL_CONFIG += \
   POSTINSTALL_PATH_system=system/bin/otapreopt_script \
   FILESYSTEM_TYPE_system=ext4 \
   POSTINSTALL_OPTIONAL_system=true
+
+PRODUCT_PACKAGES += \
+    android.hardware.keymaster@1.0 \
+    libkeymaster1 \
+    libhardware \
+    libkeystore_binder \
+    hwservicebinder

@@ -1,0 +1,10 @@
+type keymaster_service, service_manager_type;
+allow recovery keymaster_service:service_manager find;
+
+type hal_service, service_manager_type;
+allow recovery hal_service:service_manager find;
+
+allow recovery self:netlink_selinux_socket { create bind };
+allow recovery self:capability sys_resource;
+allow recovery selinuxfs:dir { read open };
+

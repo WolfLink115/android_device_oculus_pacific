@@ -7,7 +7,6 @@
 * So far almost everything.
 
 ## Not working?
-* No OTA Update support yet
 * You tell me :3
 
 ## Working to an extent?

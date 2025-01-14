@@ -79,7 +79,6 @@ PLATFORM_VERSION := 16.1.0
 
 TW_INCLUDE_CRYPTO := true
 TW_INCLUDE_FBE := true
-TW_SUPPORT_FBE := true
 TW_USE_KEYMASTER := true
 
 # SEPolicy
@@ -97,7 +96,7 @@ TW_INPUT_BLACKLIST := "hbtp_vm"
 TW_USE_TOOLBOX := true
 TW_INCLUDE_REPACKTOOLS := true
 BOARD_HAS_NO_REAL_SDCARD := true
-RECOVERY_DATA_ON_SDCARD := true
+RECOVERY_SDCARD_ON_DATA := true
 TARGET_RECOVERY_QCOM_RTC_FIX := true
 TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
 TARGET_USE_CUSTOM_LUN_FILE_PATH := "/sys/class/android_usb/android0/f_mass_storage/lun/file"

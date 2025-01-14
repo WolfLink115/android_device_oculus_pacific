@@ -7,11 +7,18 @@
 
 LOCAL_PATH := device/oculus/pacific
 
+# A/B support
+PRODUCT_PACKAGES += \
+    otapreopt_script \
+    cppreopts.sh \
+    update_engine \
+    update_engine_sideload \
+    update_verifier
+
 # A/B OTA Partitions
 AB_OTA_PARTITIONS += \
     boot \
     system \
-    vendor \
     modem
 
 # Set required configs for A/B OTA to work
@@ -58,4 +65,5 @@ PRODUCT_PACKAGES += \
 # Boot control HAL
 PRODUCT_PACKAGES += \
     android.hardware.boot@1.0-impl \
+    android.hardware.boot@1.0-impl.recovery:64 \
     android.hardware.boot@1.0-service

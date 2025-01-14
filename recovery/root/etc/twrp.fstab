@@ -7,8 +7,9 @@
 /persist_image	emmc	/dev/block/bootdevice/by-name/persist	flags=display="Persist_Image";backup=1;flashimg=1
 
 # mount		fstype	device					flags
+/		ext4	/dev/block/bootdevice/by-name/system	flags=slotselect;display="System";backup=1;flashimg=1
 /boot		emmc	/dev/block/bootdevice/by-name/boot	flags=slotselect;backup=1
-/system_root	ext4	/dev/block/bootdevice/by-name/system	flags=slotselect;display="System";backup=1;flashimg=1
+/system_root	ext4	/dev/block/bootdevice/by-name/system	flags=slotselect;display="System Root";backup=1;flashimg=1
 /data		ext4	/dev/block/bootdevice/by-name/userdata	flags=encryptable=footer;backup=1
 /persist	ext4	/dev/block/bootdevice/by-name/persist	flags=display="Persist";backup=1
 /splash		emmc	/dev/block/bootdevice/by-name/splash	flags=display="Splash Image";backup=1;flashimg=1

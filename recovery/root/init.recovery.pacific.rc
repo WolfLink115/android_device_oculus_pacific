@@ -1,3 +1,5 @@
+import init.recovery.oculus.rc
+
 on fs
     wait /dev/block/platform/soc/624000.ufshc
     symlink /dev/block/platform/soc/624000.ufshc /dev/block/bootdevice

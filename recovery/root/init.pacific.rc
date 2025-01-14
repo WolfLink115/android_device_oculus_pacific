@@ -1,0 +1,751 @@
+# Copyright (c) 2009-2012, 2014-2016, The Linux Foundation. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of The Linux Foundation nor
+#       the names of its contributors may be used to endorse or promote
+#       products derived from this software without specific prior written
+#       permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+import init.oculus.unlock.rc
+import init.oculus.usb.rc
+import init.oculus.verity.rc
+import init.oculus.properties.rc
+
+on early-init
+    mount debugfs debugfs /sys/kernel/debug
+    chmod 0755 /sys/kernel/debug
+
+    # init.target.rc
+    mkdir /firmware 0771 system system
+    mkdir /bt_firmware 0771 system system
+
+    symlink /data/tombstones /tombstones
+    mkdir /dsp 0771 media media
+
+on init
+    # Set permissions for persist partition
+    mkdir /persist 0771 root system
+
+    # Support legacy paths
+    symlink /sdcard /mnt/sdcard
+    symlink /sdcard /storage/sdcard0
+
+    # Disable BCL hotplug
+    write /sys/module/msm_thermal/core_control/enabled 0
+    write /sys/devices/soc/soc:qcom,bcl/mode "disable"
+    write /sys/devices/soc/soc:qcom,bcl/hotplug_mask 0
+    write /sys/devices/soc/soc:qcom,bcl/hotplug_soc_mask 0
+    write /sys/devices/soc/soc:qcom,bcl/mode "enable"
+
+    # Online all cores
+    write /sys/devices/system/cpu/cpu0/online 1
+    write /sys/devices/system/cpu/cpu2/online 1
+
+    # Configure governor settings for little cluster
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor "interactive"
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/use_sched_load 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/use_migration_notif 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay 19000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 90
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 20000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 960000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads 80
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 19000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/max_freq_hysteresis 79000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/ignore_hispeed_on_notif 1
+
+    # Configure governor settings for big cluster
+    write /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor "interactive"
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/use_sched_load 1
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/use_migration_notif 1
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/above_hispeed_delay "19000 1400000:39000 1700000:19000 2100000:79000"
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/go_hispeed_load 90
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/timer_rate 20000
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/hispeed_freq 1248000
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/io_is_busy 1
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/target_loads "85 1500000:90 1800000:70 2100000:95"
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/min_sample_time 190000
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/max_freq_hysteresis 79000
+    write /sys/devices/system/cpu/cpu2/cpufreq/interactive/ignore_hispeed_on_notif 1
+
+    # Setting b.L scheduler parameters
+    write /proc/sys/kernel/sched_boost 1
+    write /proc/sys/kernel/sched_downmigrate 45
+    write /proc/sys/kernel/sched_upmigrate 45
+    write /proc/sys/kernel/sched_freq_inc_notify 400000
+    write /proc/sys/kernel/sched_freq_dec_notify 400000
+    write /proc/sys/kernel/sched_spill_nr_run 3
+    write /proc/sys/kernel/sched_init_task_load 100
+    write /proc/sys/kernel/sched_cpu_high_irqload 1000000
+
+    # Enable all LPM by default
+    write /sys/module/lpm_levels/parameters/sleep_disabled "N"
+
+    # Set the cpusets early to boost boot time and adjust back after boot complete
+    write /dev/cpuset/top-app/cpus 2-3
+    write /dev/cpuset/foreground/cpus 0-1
+    write /dev/cpuset/foreground/boost/cpus 0-3
+    write /dev/cpuset/background/cpus 0-3
+    write /dev/cpuset/system-background/cpus 0-3
+
+    # Create and enable the reserved cpuset for high priority oculus processes
+    mkdir /dev/cpuset/reserved
+    write /dev/cpuset/reserved/cpus 0-3
+    write /dev/cpuset/reserved/mems 0
+    chown system system /dev/cpuset/reserved
+    chown system system /dev/cpuset/reserved/tasks
+    chmod 0664 /dev/cpuset/reserved/tasks
+
+    # Create cpuset for IMU threads, but don't configure yet
+    mkdir /dev/cpuset/imu 0750 root system
+    write /dev/cpuset/imu/cpus 0
+    write /dev/cpuset/imu/mems 0
+
+    # init.target.rc
+    write /sys/module/qpnp_rtc/parameters/poweron_alarm 1
+
+    # init.qcom.usb.sh
+    write /sys/module/g_android/parameters/mtp_tx_req_len 131072
+    write /sys/module/g_android/parameters/mtp_rx_req_len 131072
+
+    # Create cgroup for Oculus restricted-memory apps
+    mkdir /dev/memcg/rmem/ 0755 system system
+    chown system system /dev/memcg/rmem/tasks
+    chmod 0664 /dev/memcg/rmem/tasks
+
+on fs
+    wait /dev/block/bootdevice
+    mount_all fstab.${ro.hardware} --early
+
+    mkdir /persist/data 0700 system system
+    mkdir /persist/bms 0700 root system
+
+    chmod /persist/sensors 0775
+    chmod /persist/sensors/sensors_settings 0664
+    chown system root /persist/sensors/sensors_settings
+
+    restorecon_recursive /persist
+
+    # atrace.rc
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_drawctxt_wait_start/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_drawctxt_wait_done/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_drawctxt_switch/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_gpu_fault/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_sp_tp/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_a3xx_irq_status/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_a4xx_irq_status/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_a5xx_irq_status/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_clear_to_trig/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_trig_to_comp/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_trig_to_comp_int/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_comp_to_clear/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_token_submit/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_preempt_trigger/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/adreno_preempt_done/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_issueibcmds/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_readtimestamp/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_waittimestamp_entry/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_waittimestamp_exit/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_irq/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_bus/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_rail/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_retention_clk/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_clk/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_pwrlevel/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_buslevel/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_gpubusy/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_pwrstats/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_pwr_set_state/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_pwr_request_state/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_alloc/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_mmap/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_unmapped_area_collision/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_map/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_free/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_sync_cache/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_sync_full_cache/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_timestamp_queue/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_timestamp_free/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_context_create/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_context_detach/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_context_destroy/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_user_pwrlevel_constraint/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_constraint/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_mmu_pagefault/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_regwrite/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_popp_level/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_popp_mod/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_popp_nap/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_register_event/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_fire_event/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_active_count/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_pagetable_destroy/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/syncpoint_timestamp/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/syncpoint_timestamp_expire/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/syncpoint_fence/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/syncpoint_fence_expire/enable
+    chown root shell /sys/kernel/debug/tracing/events/kgsl/kgsl_msg/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_drawctxt_wait_start/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_drawctxt_wait_done/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_drawctxt_switch/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_gpu_fault/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_sp_tp/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_a3xx_irq_status/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_a4xx_irq_status/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_a5xx_irq_status/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_clear_to_trig/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_trig_to_comp/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_trig_to_comp_int/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_comp_to_clear/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_hw_preempt_token_submit/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_preempt_trigger/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/adreno_preempt_done/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_issueibcmds/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_readtimestamp/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_waittimestamp_entry/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_waittimestamp_exit/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_irq/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_bus/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_rail/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_retention_clk/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_clk/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_pwrlevel/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_buslevel/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_gpubusy/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_pwrstats/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_pwr_set_state/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_pwr_request_state/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_alloc/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_mmap/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_unmapped_area_collision/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_map/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_free/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_sync_cache/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_sync_full_cache/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_timestamp_queue/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mem_timestamp_free/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_context_create/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_context_detach/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_context_destroy/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_user_pwrlevel_constraint/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_constraint/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_mmu_pagefault/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_regwrite/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_popp_level/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_popp_mod/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_popp_nap/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_register_event/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_fire_event/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_active_count/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_pagetable_destroy/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/syncpoint_timestamp/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/syncpoint_timestamp_expire/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/syncpoint_fence/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/syncpoint_fence_expire/enable
+    chmod 0664 /sys/kernel/debug/tracing/events/kgsl/kgsl_msg/enable
+
+on post-fs
+    start qseecomd
+    wait_for_prop sys.listeners.registered true
+
+    start sensor-sh
+
+    mkdir /persist/battery 0770 root system
+
+on late-fs
+    write /sys/block/sda/queue/iostats 0
+    write /sys/block/sda/queue/iosched/slice_idle 0
+    write /sys/block/sda/queue/read_ahead_kb 2048
+    write /sys/block/sda/queue/nr_requests 256
+    write /sys/block/dm-0/queue/read_ahead_kb 2048
+    write /sys/block/dm-1/queue/read_ahead_kb 2048
+
+    # Enable audio and video device for bootanim
+    write /sys/kernel/boot_adsp/boot 1
+    write /sys/kernel/boot_slpi/boot 1
+    chown system graphics /sys/class/graphics/fb0/msm_cmd_autorefresh_en
+    chmod 0664 /sys/class/graphics/fb0/msm_cmd_autorefresh_en
+
+    # Start bootanim and its dependencies
+    start servicemanager
+    start surfaceflinger
+    start audioserver
+    start bootanim
+
+    # mount RW partitions which need run fsck
+    mount_all fstab.${ro.hardware} --late
+
+on post-fs-data
+    setprop vold.post_fs_data_done 1
+
+    # Create directory for sensors
+    mkdir /data/misc/sensors 0775 root root
+
+    # Create directory for TZ Apps
+    mkdir /data/misc/qsee 0770 system system
+
+    #Create PERFD deamon related dirs
+    mkdir /data/system/perfd 0770 root system
+    chmod 2770 /data/system/perfd
+    rm /data/system/perfd/default_values
+
+    # Create /data/time folder for time-services
+    mkdir /data/time/ 0700 system system
+
+    # Create directory for remote pairing information
+    mkdir /data/remote_pairing/ 0700 system system
+
+    # Create directory for tracking service information
+    mkdir /data/misc/tracking 0700 system system
+
+    # init.target.rc
+    mkdir /data/tombstones 0771 system system
+    mkdir /tombstones/modem 0771 system system
+    mkdir /tombstones/lpass 0771 system system
+    mkdir /tombstones/wcnss 0771 system system
+    mkdir /persist/data/sfs 0700 system system
+    mkdir /persist/data/tz 0700 system system
+
+    # Make sure SYSTEM_SN is readable
+    chmod 0644 /persist/SYSTEM_SN
+
+on early-boot
+    # init.qcom.early_boot.sh
+    chown system graphics /sys/class/graphics/fb0/idle_time
+    chown system graphics /sys/class/graphics/fb0/dynamic_fps
+    chown system graphics /sys/class/graphics/fb0/dyn_pu
+    chown system graphics /sys/class/graphics/fb0/modes
+    chown system graphics /sys/class/graphics/fb0/mode
+    chown system graphics /sys/class/graphics/fb0/msm_fb_duty_cycle_denom
+    chown system graphics /sys/class/graphics/fb0/msm_fb_duty_cycle_numer
+    chown system graphics /sys/class/graphics/fb0/lineptr_value
+
+    chmod 0664 /sys/class/graphics/fb0/idle_time
+    chmod 0664 /sys/class/graphics/fb0/dynamic_fps
+    chmod 0664 /sys/class/graphics/fb0/dyn_pu
+    chmod 0664 /sys/class/graphics/fb0/modes
+    chmod 0664 /sys/class/graphics/fb0/mode
+    chmod 0664 /sys/class/graphics/fb0/msm_fb_duty_cycle_denom
+    chmod 0664 /sys/class/graphics/fb0/msm_fb_duty_cycle_numer
+    chmod 0664 /sys/class/graphics/fb0/lineptr_value
+
+    #Execute factory bonding init script which will copy files as needed
+    exec - bluetooth bluetooth -- /system/bin/init.oculus.remote-bonding.sh --restore
+
+on property:mfg.oculus.remotebond.store=true
+    mkdir /persist/remote_bonding 0770 bluetooth bluetooth
+    chmod 0775 /persist/remote_pairing
+    chmod 0664 /persist/remote_pairing/factory_pairing.txt
+    exec - bluetooth bluetooth -- /system/bin/init.oculus.remote-bonding.sh --store
+    chmod 0600 /persist/remote_pairing/factory_pairing.txt
+    chmod 0770 /persist/remote_pairing
+
+on boot
+    # init.qcom.testscripts.sh
+    write /sys/kernel/debug/scm_errata/kryo_e76 1
+
+    # init.qcom.post_boot.sh
+    write /sys/devices/soc0/select_image 10
+    write /sys/devices/soc0/image_version "10:"${ro.build.id}":"${ro.build.version.incremental}
+    write /sys/devices/soc0/image_variant ${ro.product.name}"-"${ro.build.type}
+    write /sys/devices/soc0/image_crm_version ${ro.build.version.codename}
+
+    chown bluetooth net_bt /sys/class/rfkill/rfkill0/device/extldo
+    chown bluetooth net_bt /sys/class/rfkill/rfkill0/state
+    chown bluetooth net_bt /sys/class/rfkill/rfkill0/type
+    chmod 0660 /sys/class/rfkill/rfkill0/device/extldo
+    chmod 0660 /sys/class/rfkill/rfkill0/state
+
+    # LED permissions
+    chown system system /sys/class/leds/black/brightness
+    chown system system /sys/class/leds/white/brightness
+    chown system system /sys/class/leds/green/blink
+    chown system system /sys/class/leds/blue/blink
+
+    # Battery charging permissions
+    chown shell system /sys/class/power_supply/battery/charging_enabled
+    chmod 0664 /sys/class/power_supply/battery/charging_enabled
+
+    # Fuel Gauge SRAM dump permissions.
+    chown system system /sys/kernel/debug/fg_memif/sram_dump
+    chmod 0440 /sys/kernel/debug/fg_memif/sram_dump
+
+    mkdir /persist/drm 0770 system system
+    mkdir /persist/bluetooth 0770 bluetooth bluetooth
+    mkdir /persist/misc 0770 system system
+    mkdir /persist/alarm 0770 system system
+    mkdir /persist/time 0770 system system
+
+    setprop wifi.interface wlan0
+
+# Services start here
+
+# Display panel colorspace correction
+# Default to D65 white point (x: 0.3127, y: 0.3290)
+service adjust_color /vendor/bin/adjust_panel_colorspace \
+        ${ovr.panel.white_point.x:-0.3127} \
+        ${ovr.panel.white_point.y:-0.3290}
+    user system
+    group graphics
+    oneshot
+    disabled
+
+on property:ovr.panel.adjust_colorspace=1 && property:sys.boot_completed=1 && property:sys.hmt.mounted=1
+    start adjust_color
+
+service adsprpcd /system/bin/adsprpcd
+    class main
+    user media
+    group media
+
+service batteryd_sbin /sbin/batteryd
+    class main
+    user root
+    group root
+    seclabel u:r:batteryd:s0
+
+service btsnoop /system/bin/btsnoop
+    user bluetooth
+    group bluetooth net_bt_admin sdcard_rw sdcard_r media_rw
+    class late_start
+    disabled
+    oneshot
+
+on property:bluetooth.startbtsnoop=true
+    start btsnoop
+
+on property:bluetooth.startbtsnoop=false
+    stop btsnoop
+
+service charger /charger
+    class charger
+    group system graphics
+    seclabel u:r:healthd:s0
+
+on charger
+    write /sys/devices/system/cpu/cpu2/online 0
+    write /sys/devices/system/cpu/cpu3/online 0
+    write /sys/module/lpm_levels/parameters/sleep_disabled 0
+    wait /dev/block/bootdevice/by-name/system
+    mount ext4 /dev/block/bootdevice/by-name/system /system ro barrier=1
+
+    wait /dev/block/bootdevice/by-name/persist
+    mount ext4 /dev/block/bootdevice/by-name/persist /persist nosuid nodev barrier=1
+
+    start batteryd_sbin
+
+service cnss-daemon /system/bin/cnss-daemon -n
+    class late_start
+    user system
+    group system inet net_admin wifi
+
+on property:sys.shutdown.requested=*
+    stop cnss-daemon
+
+service cnss_diag /system/bin/cnss_diag -q -f
+    class main
+    user system
+    group system wifi inet net_admin sdcard_rw media_rw diag
+    disabled
+    oneshot
+
+on property:wlan.startcnss_diag=true
+    start cnss_diag
+
+on property:wlan.startcnss_diag=false
+    stop cnss_diag
+
+service default_color /vendor/bin/adjust_panel_colorspace -1
+    user system
+    group graphics
+    oneshot
+    disabled
+
+on property:ovr.panel.adjust_colorspace=0 && property:sys.boot_completed=1 && property:sys.hmt.mounted=1
+    start default_color
+
+service energy-awareness /system/bin/energy-awareness
+    class main
+    user root
+    group system
+    oneshot
+
+service init_imu /system/bin/init.oculus.imu.sh
+    class main
+    user root
+    group root system readproc
+    disabled
+    oneshot
+
+service init_power /system/bin/init.oculus.power.sh
+    class main
+    user root
+    group root system
+    disabled
+    oneshot
+
+service irsc_util /system/bin/irsc_util "/vendor/etc/sec_config"
+    class core
+    user root
+    oneshot
+
+service msm_irqbalance /system/bin/msm_irqbalance -f /system/vendor/etc/msm_irqbalance.conf
+    class core
+    user root
+    group root
+    writepid /dev/cpuset/system-background/tasks
+
+service per_mgr system/bin/pm-service
+    class core
+    user system
+    group system net_raw
+    ioprio rt 4
+
+service per_proxy /system/bin/pm-proxy
+    class core
+    user system
+    group system
+    disabled
+
+on property:init.svc.per_mgr=running
+    start per_proxy
+
+on property:sys.shutdown.requested=*
+    stop per_proxy
+
+service perfd /system/vendor/bin/perfd
+    class main
+    user root
+    group root readproc
+    disabled
+    socket perfd seqpacket 0666 root system
+
+service qseecomd /system/bin/qseecomd
+    class core
+    user root
+    group root
+    disabled
+
+service qseeproxydaemon /system/vendor/bin/qseeproxydaemon
+    class late_start
+    user system
+    group system
+
+service rmt_storage /system/bin/rmt_storage
+    class core
+    user root
+
+service sensors /system/bin/sensors.qcom
+    class main
+    user root
+    group root
+
+service ssr_setup /system/bin/ssr_setup
+    oneshot
+    disabled
+
+on property:persist.sys.ssr.enable_debug=*
+    write /sys/module/subsystem_restart/parameters/enable_debug ${persist.sys.ssr.enable_debug}
+
+on property:persist.sys.mba_boot_timeout=*
+    write /sys/module/pil_msa/parameters/pbl_mba_boot_timeout_ms ${persist.sys.mba_boot_timeout}
+
+on property:persist.sys.modem_auth_timeout=*
+    write /sys/module/pil_msa/parameters/modem_auth_timeout_ms ${persist.sys.modem_auth_timeout}
+
+on property:persist.sys.pil_proxy_timeout=*
+    write /sys/module/peripheral_loader/parameters/proxy_timeout_ms ${persist.sys.pil_proxy_timeout}
+
+on property:persist.sys.ssr.restart_level=*
+    start ssr_setup
+
+on property:persist.sys.ssr.enable_ramdumps=1
+    write /sys/module/subsystem_restart/parameters/enable_ramdumps 1
+    mkdir /data/ramdump 770 system system
+    start ss_ramdump
+
+on property:persist.sys.ssr.enable_ramdumps=0
+    write /sys/module/subsystem_restart/parameters/enable_ramdumps 0
+
+service start_hci_filter /system/bin/wcnss_filter
+    class late_start
+    user bluetooth
+    group bluetooth qcom_diag system wakelock
+    disabled
+
+on property:wc_transport.start_hci=true
+    start start_hci_filter
+
+on property:wc_transport.start_hci=false
+    stop start_hci_filter
+
+service tftp_server /system/bin/tftp_server
+   class core
+   user root
+
+service thermal-engine /system/vendor/bin/thermal-engine
+    class main
+    user root
+    group root
+    socket thermal-send-client stream 0666 system system
+    socket thermal-recv-client stream 0660 system system
+    socket thermal-recv-passive-client stream 0666 system system
+
+service time_daemon /system/bin/time_daemon
+    class late_start
+    user root
+    group root
+
+service p2p_supplicant /system/bin/wpa_supplicant -qq \
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
+    -I/system/etc/wifi/p2p_supplicant_overlay.conf -N \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -I/system/etc/wifi/wpa_supplicant_overlay.conf \
+    -O/data/misc/wifi/sockets -puse_p2p_group_interface=1 -dd \
+    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0
+#   we will start as root and wpa_supplicant will switch to user wifi
+#   after setting up the capabilities required for WEXT
+#   user wifi
+#   group wifi inet keystore
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service wfdservice /system/bin/wfdservice
+    class main
+    user system
+    group audio camera inet net_bt_stack drmrpc media_rw media input net_admin
+    #removed these because of limit of 12 groups
+    #graphics net_bt net_bt_admin bluetooth
+    disabled
+    oneshot
+
+on property:sys.wfdservice=enable
+    start wfdservice
+
+on property:sys.wfdservice=disable
+    stop wfdservice
+
+service wpa_supplicant /system/bin/wpa_supplicant -qq \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -I/system/etc/wifi/wpa_supplicant_overlay.conf \
+    -O/data/misc/wifi/sockets -dd \
+    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0
+    #   we will start as root and wpa_supplicant will switch to user wifi
+    #   after setting up the capabilities required for WEXT
+    #   user wifi
+    #   group wifi inet keystore
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+on property:init.svc.wpa_supplicant=stopped
+    stop dhcpcd
+
+service dhcpcd_bt-pan /system/bin/dhcpcd -BKLG
+    class late_start
+    disabled
+    oneshot
+
+service dhcpcd_eth0 /system/bin/dhcpcd -ABKLG
+    class late_start
+    disabled
+    oneshot
+
+service dhcpcd_p2p /system/bin/dhcpcd -ABKLG
+    class late_start
+    disabled
+    oneshot
+
+service dhcpcd_wlan0 /system/bin/dhcpcd -ABKLG
+    class late_start
+    disabled
+    oneshot
+
+service iprenew_bt-pan /system/bin/dhcpcd -n
+    class late_start
+    disabled
+    oneshot
+
+service iprenew_eth0 /system/bin/dhcpcd -n
+    class late_start
+    disabled
+    oneshot
+
+service iprenew_p2p /system/bin/dhcpcd -n
+    class late_start
+    disabled
+    oneshot
+
+service iprenew_wlan0 /system/bin/dhcpcd -n
+    class late_start
+    disabled
+    oneshot
+
+# Property triggers start here
+on property:init.svc.bootanim=running
+    write /sys/class/leds/wled/brightness 4095
+
+on property:sys.boot_completed=1
+    # Set up bandwidth governors
+    start init_power
+
+    # Set runtime cpuset configuration
+    write /dev/cpuset/top-app/cpus 0-3
+    write /dev/cpuset/foreground/cpus 0-3
+    write /dev/cpuset/foreground/boost/cpus 0-3
+    write /dev/cpuset/background/cpus 0
+    write /dev/cpuset/system-background/cpus 0-2
+
+    write /dev/cpuset/imu/cpus 0-1
+
+    start perfd
+
+    write /sys/block/dm-1/queue/read_ahead_kb 128
+    write /sys/block/dm-0/queue/read_ahead_kb 128
+    write /sys/block/sda/queue/nr_requests 128
+    write /sys/block/sda/queue/read_ahead_kb 128
+    write /sys/block/sda/queue/iosched/slice_idle 1
+    write /dev/kmsg "Boot completed "
+
+on property:oculus.cpuset.imu_config_needed=*
+    start init_imu
+
+on property:persist.ovr.video.perflock=1 && property:sys.boot_completed=1
+    write /d/msm_vidc/dcvs_dec_mode N
+    write /d/msm_vidc/dcvs_enc_mode N
+    write /d/msm_vidc/bitrate_clock_scaling N
+
+on property:persist.ovr.video.perflock=0 && property:sys.boot_completed=1
+    write /d/msm_vidc/dcvs_dec_mode Y
+    write /d/msm_vidc/dcvs_enc_mode Y
+    write /d/msm_vidc/bitrate_clock_scaling Y
+
+on property:ro.boot.adb=1
+    setprop persist.sys.usb.config adb
+
+# Set Oculus restricted memory limit
+on property:ro.ovr.rmem.limit=*
+    write /dev/memcg/rmem/memory.limit_in_bytes ${ro.ovr.rmem.limit}

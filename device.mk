@@ -11,6 +11,7 @@ LOCAL_PATH := device/oculus/pacific
 AB_OTA_PARTITIONS += \
     boot \
     system \
+    vendor \
     modem
 
 # Set required configs for A/B OTA to work
@@ -41,3 +42,20 @@ PRODUCT_PACKAGES += \
     libhardware \
     libkeystore_binder \
     hwservicebinder
+
+# Enable update engine sideloading by including the static version of the
+# boot_control HAL and its dependencies.
+PRODUCT_STATIC_BOOT_CONTROL_HAL := \
+    bootctrl.msm8996 \
+    libgptutils \
+    libz \
+    libcutils
+
+PRODUCT_PACKAGES += \
+    bootctrl.msm8996 \
+    bootctrl.msm8996.recovery
+
+# Boot control HAL
+PRODUCT_PACKAGES += \
+    android.hardware.boot@1.0-impl \
+    android.hardware.boot@1.0-service

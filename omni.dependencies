@@ -5,7 +5,6 @@
     "target_path":  "kernel/oculus/pacific",
     "revision":     "master"
   },
-
   {
     "remote":       "wl115",
     "repository":   "android_vendor_oculus_pacific",

@@ -9,9 +9,6 @@
 ## Not working?
 * You tell me :3
 
-## Working to an extent?
-* Display rotation seemingly works on TWRP versions higher than TWRP-9. I can't seem to build TWRP-11 or TWRP-12 due to some clang-12 error in the kernel as well as some other error that I am trying to debug. I will keep y'all updated on everything as time moves forward.
-
 # Special thanks!!
 * PizzaG for telling me that encryption wasn't working, helping me get the partitions mounted properly; A/B partitions showing up properly as well, and helping with init files
 * Alijoshua for helping me start off the port in the beginning, and trying to help with A/B partitions as well.

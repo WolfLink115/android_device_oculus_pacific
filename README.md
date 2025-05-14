@@ -7,7 +7,10 @@
 * So far almost everything.
 
 ## Not working?
-* You tell me :3
+* As far as I know, the only thing that isn't working is Boot Control HAL, but I am unsure as to if that is really needed, let alone if it'll even work in the grand scheme of things (mainly because I dunno how to make it work lol). If someone knows how to add Boot Control HAL and is willing to help me set that up, please let me know!
+
+## Note:
+Since the device doesn't feature a touchscreen, you will have to use an OTG cable with a mouse and keyboard to navigate and type. I just confirmed about 10 minutes before making. this edit to the readme, that OTG support is in fact working thankfully. Also I will be uploading some partially updated source code later on-
 
 # Special thanks!!
 * PizzaG for telling me that encryption wasn't working, helping me get the partitions mounted properly; A/B partitions showing up properly as well, and helping with init files

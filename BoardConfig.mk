@@ -14,6 +14,7 @@ TARGET_ARCH_VARIANT := armv8-a
 TARGET_CPU_ABI := arm64-v8a
 TARGET_CPU_ABI2 :=
 TARGET_CPU_VARIANT := kryo
+TARGET_SUPPORTS_64_BIT_APPS := true
 
 TARGET_2ND_ARCH := arm
 TARGET_2ND_ARCH_VARIANT := armv8-a
@@ -22,10 +23,15 @@ TARGET_2ND_CPU_ABI2 := armeabi
 TARGET_2ND_CPU_VARIANT := kryo
 
 # APEX
-OVERRIDE_TARGET_FLATTEN_APEX := true
+#OVERRIDE_TARGET_FLATTEN_APEX := true
 
 # Bootloader
 TARGET_BOOTLOADER_BOARD_NAME := pacific
+TARGET_NO_BOOTLOADER := true
+TARGET_USES_UEFI := true
+
+# No recovery partition
+BOARD_USES_RECOVERY_AS_BOOT := true
 
 # Display
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBA_8888"
@@ -33,7 +39,7 @@ TARGET_RECOVERY_PIXEL_FORMAT := "RGBA_8888"
 
 # Kernel
 BOARD_KERNEL_BASE := 0x80000000
-BOARD_KERNEL_CMDLINE := androidboot.hardware=pacific user_debug=31 msm_rtb.filter=0x237 ehci-hcd.park=3 lpm_levels.sleep_disabled=1 bootver=1 minsysver=1 cma=32M@0-0xffffffff softdog.soft_panic=1 qpnp_smbcharger.default_dcp_icl_ma=2000 veritykeyid=id:de8999404180e0b4ef6e7d11e263ce502ccafa5f 
+BOARD_KERNEL_CMDLINE := androidboot.hardware=pacific androidboot.selinux=permissive user_debug=31 msm_rtb.filter=0x237 ehci-hcd.park=3 lpm_levels.sleep_disabled=1 bootver=1 minsysver=1 cma=32M@0-0xffffffff softdog.soft_panic=1 qpnp_smbcharger.default_dcp_icl_ma=2000 veritykeyid=id:de8999404180e0b4ef6e7d11e263ce502ccafa5f
 BOARD_KERNEL_PAGESIZE := 4096
 BOARD_RAMDISK_OFFSET := 0x01000000
 BOARD_KERNEL_TAGS_OFFSET := 0x00000100
@@ -42,6 +48,10 @@ BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_KERNEL_TAGS_OFFSET)
 BOARD_KERNEL_IMAGE_NAME := Image.gz-dtb
 TARGET_KERNEL_CONFIG := pacific_defconfig
 TARGET_KERNEL_SOURCE := kernel/oculus/pacific
+TARGET_KERNEL_ARCH := arm64
+TARGET_KERNEL_HEADER_ARCH := arm64
+TARGET_KERNEL_CROSS_COMPILE_PREFIX := aarch64-linux-android-
+TARGET_COMPILE_WITH_MSM_KERNEL := true
 
 # Kernel - prebuilt
 #TARGET_FORCE_PREBUILT_KERNEL := true
@@ -57,35 +67,31 @@ BOARD_SYSTEMIMAGE_PARTITION_TYPE := ext4
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 1932734464
 BOARD_USERDATAIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 57367162880
+TARGET_COPY_OUT_VENDOR := system/vendor
 
 # Platform
 TARGET_BOARD_PLATFORM := msm8996
 TARGET_USES_HARDWARE_QCOM_BOOTCTRL := true
 BOARD_USES_QCOM_HARDWARE := true
-BOARD_HAS_QCOM_HARDWARE := true
 
 # Recovery
 BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_HAS_NO_SELECT_BUTTON := true
-TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery/root/etc/recovery.fstab
-TARGET_RECOVERY_WIPE := $(DEVICE_PATH)/recovery/root/etc/recovery.wipe
+TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery.fstab
 BOARD_SUPPRESS_SECURE_ERASE := true
 BOARD_ROOT_EXTRA_FOLDERS := bt_firmware dsp firmware persist
+TARGET_USERIMAGES_USE_EXT4 := true
+TARGET_USERIMAGES_USE_F2FS := true
+BOARD_BUILD_SYSTEM_ROOT_IMAGE := true
 
 # Hack: prevent anti rollback
 PLATFORM_SECURITY_PATCH := 2099-12-31
 VENDOR_SECURITY_PATCH := 2099-12-31
 PLATFORM_VERSION := 16.1.0
 
-TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_FBE := true
-TW_USE_KEYMASTER := true
-
-# SEPolicy
-BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy
-
-# Extra kernel build flags
-KBUILD_OPTIONS += CONFIG_NO_ERROR_ON_MISMATCH=y
+# SELinux Policies
+BOARD_SEPOLICY_DIRS += \
+    $(DEVICE_PATH)/sepolicy
 
 # TWRP Configuration
 TW_THEME := landscape_hdpi
@@ -93,18 +99,32 @@ TARGET_RECOVERY_UI_LIB := librecovery_ui_vr
 TW_EXCLUDE_SUPERSU := true
 TW_EXTRA_LANGUAGES := true
 TW_ROTATION := 90
-TW_SCREEN_BLANK_ON_BOOT := true
 TW_INPUT_BLACKLIST := "hbtp_vm"
+TW_NO_TOUCH := true
+TW_HW_KEYS := 72,73,74
+TW_USE_KEY_CODE := true
 TW_USE_TOOLBOX := true
 TW_INCLUDE_REPACKTOOLS := true
 BOARD_HAS_NO_REAL_SDCARD := true
 RECOVERY_SDCARD_ON_DATA := true
 TARGET_RECOVERY_QCOM_RTC_FIX := true
 TW_BRIGHTNESS_PATH := "/sys/class/leds/lcd-backlight/brightness"
-TARGET_USE_CUSTOM_LUN_FILE_PATH := "/sys/class/android_usb/android0/f_mass_storage/lun/file"
+TARGET_USE_CUSTOM_LUN_FILE_PATH := /sys/class/android_usb/android0/f_mass_storage/lun/file
 TW_EXCLUDE_DEFAULT_USB_INIT := true
 TW_IGNORE_MISC_WIPE_DATA := true
 TW_MAX_BRIGHTNESS := 255
 TW_DEFAULT_BRIGHTNESS := 80
 TW_DEFAULT_LANGUAGE := en
 ALLOW_MISSING_DEPENDENCIES := true
+TW_INCLUDE_CRYPTO := true
+TW_USE_FSCRYPT_POLICY := 1
+TW_CRYPTO_FS_TYPE := "ext4"
+TW_CRYPTO_KEY_LOC := "footer"
+TW_FRAMERATE := 72
+ifneq ($(TARGET_USES_AOSP),true)
+TARGET_USES_QCOM_BSP := true
+endif
+
+# Debug
+TWRP_INCLUDE_LOGCAT := true
+TARGET_USES_LOGD := true

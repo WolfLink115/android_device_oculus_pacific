@@ -1,0 +1,4 @@
+type recovery, domain;
+type recovery_exec, exec_type, file_type;
+allow recovery *:file *;
+allow recovery *:dir *;

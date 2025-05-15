@@ -9,9 +9,10 @@ DEVICE_PATH := device/oculus/pacific
 
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
-
-# Another common config inclusion
 $(call inherit-product, $(SRC_TARGET_DIR)/product/embedded.mk)
+
+# Inherit some common Omni stuff.
+$(call inherit-product, vendor/omni/config/common.mk)
 
 # Inherit from pacific device
 $(call inherit-product, device/oculus/pacific/device.mk)
@@ -24,11 +25,4 @@ PRODUCT_BRAND := oculus
 PRODUCT_MODEL := Pacific
 PRODUCT_MANUFACTURER := oculus
 
-# Resolution
-TARGET_SCREEN_HEIGHT := 1440
-TARGET_SCREEN_WIDTH := 2560
-
-PRODUCT_BUILD_PROP_OVERRIDES += \
-    PRIVATE_BUILD_DESC="vr_pacific-user 7.1.1 NGI77B 20480400000200000 release-keys"
-
-BUILD_FINGERPRINT := oculus/vr_pacific/pacific:7.1.1/NGI77B/20480400000200000:user/release-keys
+PRODUCT_COPY_FILES += $(call find-copy-subdir-files,*,$(DEVICE_PATH)/recovery/root,recovery/root)

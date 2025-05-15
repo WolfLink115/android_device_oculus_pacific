@@ -1,0 +1,2 @@
+/vendor(/.*)? u:object_r:vendor_file:s0
+/system/vendor(/.*)? u:object_r:vendor_file:s0
